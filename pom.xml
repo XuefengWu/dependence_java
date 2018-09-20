@@ -1,0 +1,127 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>me.refactoring.analysis</groupId>
+  <artifactId>dependencies_java</artifactId>
+  <version>1.0</version>
+  <packaging>jar</packaging>
+
+  <name>dependencies_java</name>
+  <url>http://maven.apache.org</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <antlr4.visitor>true</antlr4.visitor>
+    <antlr4.listener>true</antlr4.listener>
+  </properties>  
+
+  <dependencies>
+    <!-- tag::bolt-dependency[] -->
+    <dependency>
+      <groupId>org.neo4j.driver</groupId>
+      <artifactId>neo4j-java-driver</artifactId>
+      <version>1.4.4</version>
+    </dependency>
+    <!-- end::bolt-dependency[] -->
+    <dependency>
+      <groupId>org.antlr</groupId>
+      <artifactId>antlr4-runtime</artifactId>
+      <version>4.7</version>
+    </dependency>
+    <dependency>
+      <groupId>io.helidon.webserver</groupId>
+      <artifactId>helidon-webserver-bundle</artifactId>
+        <version>0.10.0</version>
+    </dependency>
+    <dependency>
+      <groupId>io.helidon.config</groupId>
+      <artifactId>helidon-config-yaml</artifactId>
+        <version>0.10.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+        <version>5.1.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+        <version>5.1.0</version>
+      <scope>test</scope>
+    </dependency>
+      <dependency>
+          <groupId>org.junit.platform</groupId>
+          <artifactId>junit-platform-surefire-provider</artifactId>
+          <version>1.0.3</version>
+      </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- This plugin sets up maven to use Java 8 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+      <!-- Plugin to compile the g4 files ahead of the java files
+           See https://github.com/antlr/antlr4/blob/master/antlr4-maven-plugin/src/site/apt/examples/simple.apt.vm
+           Except that the grammar does not need to contain the package declaration as stated in the documentation (I do not know why)
+           To use this plugin, type:
+             mvn antlr4:antlr4
+           In any case, Maven will invoke this plugin before the Java source is compiled
+        -->
+      <plugin>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr4-maven-plugin</artifactId>
+        <version>4.7</version>                
+        <executions>
+          <execution>
+            <goals>
+              <goal>antlr4</goal>
+            </goals>            
+          </execution>
+        </executions>
+      </plugin>
+      <!-- plugin to create a self-contained portable package
+           This allows us to execute our application like this:
+           java -cp target/array-init-1.0-jar-with-dependencies.jar org.abcd.examples.ArrayInit.ArrayInit
+         -->
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>simple-command</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attached</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.19.1</version>
+          <dependencies>
+              <dependency>
+                  <groupId>org.junit.platform</groupId>
+                  <artifactId>junit-platform-surefire-provider</artifactId>
+                  <version>1.1.0</version>
+              </dependency>
+          </dependencies>
+      </plugin>
+    </plugins>
+  </build>
+</project>
