@@ -2,6 +2,7 @@ package evolution.analysis.jv;
 
 import evolution.analysis.jv.calls.JavaCallApp;
 import evolution.analysis.jv.calls.plugins.JavaDaoStringParser;
+import evolution.analysis.jv.calls.plugins.MyBatisParser;
 import evolution.analysis.jv.identifier.JavaClassQuery;
 import evolution.analysis.jv.identifier.JavaIdentifierApp;
 import evolution.store.Neo4JDriverFactory;
@@ -27,7 +28,7 @@ public class ParseClassApp {
         Driver driver = Neo4JDriverFactory.create(neo4jServer);
         JavaClassQuery classQuery = new JavaClassQuery(driver);
         List<String> clzs = classQuery.load();
-        StoreManager store = new StoreManager(driver); 
+        StoreManager store = new StoreManager(driver);
         String deleteState=String.format("MATCH (c1:Class{fullname:'%s'})-[r:Has]->(m2) DETACH DELETE c1,r,m2",clz);
         System.out.println("Delete: " + clz);
         store.update(deleteState);
@@ -35,7 +36,7 @@ public class ParseClassApp {
 
         Path path = Paths.get(file);
         new JavaIdentifierApp(driver).parse(path);
-        new JavaCallApp(driver,new JavaDaoStringParser()).parse(path,clzs);
+        new JavaCallApp(driver,new MyBatisParser(rootDir)).parse(path,clzs);
         driver.close();
         LOGGER.info("finished and close driver.");
     }

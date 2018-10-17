@@ -47,7 +47,6 @@ public class JavaCallVisitor extends JavaParserBaseVisitor {
 
     @Override
     public Object visitClassDeclaration(evolution.analysis.jv.JavaParser.ClassDeclarationContext ctx) {
-
         currentClz = ctx.IDENTIFIER().getText();
         return super.visitClassDeclaration(ctx);
     }
@@ -56,6 +55,21 @@ public class JavaCallVisitor extends JavaParserBaseVisitor {
     public Object visitTypeDeclaration(evolution.analysis.jv.JavaParser.TypeDeclarationContext ctx) {
         //System.out.println(ctx.getText());
         return super.visitTypeDeclaration(ctx);
+    }
+
+    @Override public Object visitInterfaceDeclaration(JavaParser.InterfaceDeclarationContext ctx) {
+        currentClz = ctx.IDENTIFIER().getText();
+        return super.visitChildren(ctx);
+    }
+
+    @Override public Object visitInterfaceMethodDeclaration(JavaParser.InterfaceMethodDeclarationContext ctx) {
+        currentMethodCall = new JMethodCall();
+        methodCalls.add(currentMethodCall);
+        currentMethodCall.setPkg(currentPkg);
+        currentMethodCall.setClz(currentClz);
+        currentMethodCall.setMethodName(ctx.IDENTIFIER().getText());
+        daoParser.parse(currentMethodCall,ctx.IDENTIFIER().getText());
+        return super.visitChildren(ctx);
     }
 
     @Override
@@ -69,7 +83,6 @@ public class JavaCallVisitor extends JavaParserBaseVisitor {
 
         String body = ctx.getText().toUpperCase();
         daoParser.parse(currentMethodCall,body);
-        LOGGER.info("Parse: "+ctx.IDENTIFIER().getText());
 
         return super.visitMethodDeclaration(ctx);
     }
