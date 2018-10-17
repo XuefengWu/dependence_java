@@ -29,3 +29,5 @@ bin
 *.ipr
 *.iws
 **/.DS_Store
+
+**/example/

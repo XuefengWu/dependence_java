@@ -1,20 +1,18 @@
 package evolution;
 
 
-import java.util.concurrent.TimeUnit;
-import java.net.URL;
-import java.net.HttpURLConnection;
+import io.helidon.webserver.WebServer;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
-
-import io.helidon.webserver.WebServer;
-
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.concurrent.TimeUnit;
 
 public class MainTest {
 
@@ -41,17 +39,10 @@ public class MainTest {
     public void testHelloWorld() throws Exception {
         HttpURLConnection conn;
 
-        conn = getURLConnection("GET","/greet");
-        Assertions.assertEquals(200, conn.getResponseCode(), "HTTP response1");
-        JsonReader jsonReader = Json.createReader(conn.getInputStream());
-        JsonObject jsonObject = jsonReader.readObject();
-        Assertions.assertEquals("Hello World!", jsonObject.getString("message"),
-                "default message");
-
         conn = getURLConnection("GET", "/greet/Joe");
         Assertions.assertEquals(200, conn.getResponseCode(), "HTTP response2");
-        jsonReader = Json.createReader(conn.getInputStream());
-        jsonObject = jsonReader.readObject();
+        JsonReader jsonReader = Json.createReader(conn.getInputStream());
+        JsonObject jsonObject = jsonReader.readObject();
         Assertions.assertEquals("Hello Joe!", jsonObject.getString("message"),
                 "hello Joe message");
 

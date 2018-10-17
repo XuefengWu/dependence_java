@@ -62,8 +62,12 @@ public class JMethodCall {
         return tableOps;
     }
 
+    public void addTableOps(Map<String,String> tableOps) {
+        this.tableOps.putAll(tableOps);
+    }
+
     public void addTableOp(String table,String op) {
-        this.tableOps.put(table.toUpperCase(),op.toUpperCase());
+        this.tableOps.put(table,op.toUpperCase());
     }
 
     @Override

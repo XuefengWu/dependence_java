@@ -9,26 +9,28 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.logging.Logger;
 
 public class JavaCallVisitor extends JavaParserBaseVisitor {
 
+    private static final Logger LOGGER = Logger.getLogger(JavaCallVisitor.class.getName());
     private Map<String, String> fields = new HashMap<>();
     private Map<String, String> formalParameters = new HashMap<>();
     private Map<String, String> localVars = new HashMap<>();
     private String currentClz = null;
     private String currentPkg = null;
     private List<String> imports = new ArrayList<>();
+    private JavaDaoParser daoParser;
 
     private final List<String> clzs;
     private JMethodCall currentMethodCall;
 
     private List<JMethodCall> methodCalls;
 
-    public JavaCallVisitor(List<JMethodCall> methodCalls,List<String> clzs) {
+    public JavaCallVisitor(List<JMethodCall> methodCalls,List<String> clzs,JavaDaoParser daoParser) {
         this.clzs = clzs;
         this.methodCalls = methodCalls;
+        this.daoParser = daoParser;
     }
 
     @Override
@@ -46,20 +48,7 @@ public class JavaCallVisitor extends JavaParserBaseVisitor {
     @Override
     public Object visitClassDeclaration(evolution.analysis.jv.JavaParser.ClassDeclarationContext ctx) {
 
-//        System.out.println(ctx.getText());
         currentClz = ctx.IDENTIFIER().getText();
-
-//        System.out.println(ctx.getChildCount());
-//        for (int i = 0; i < ctx.getChildCount(); i++) {
-//            System.out.println(i+":"+ctx.getChild(i).getText());
-//        }
-//        if(ctx.typeType()!=null){System.out.println(ctx.typeType().getText());}
-//        if(ctx.EXTENDS()!=null){System.out.println(ctx.EXTENDS().getText());}
-//        TerminalNode anImplements = ctx.IMPLEMENTS();
-//        if(anImplements !=null){
-//            System.out.println(anImplements);
-//        }
-//        if(ctx.typeParameters()!=null){System.out.println(ctx.typeParameters().getText());}
         return super.visitClassDeclaration(ctx);
     }
 
@@ -78,87 +67,11 @@ public class JavaCallVisitor extends JavaParserBaseVisitor {
         currentMethodCall.setClz(currentClz);
         currentMethodCall.setMethodName(ctx.IDENTIFIER().getText());
 
-        String body = ctx.getText();
-        buildTableOps(body);
-        buildProcedureCalls(body);
+        String body = ctx.getText().toUpperCase();
+        daoParser.parse(currentMethodCall,body);
+        LOGGER.info("Parse: "+ctx.IDENTIFIER().getText());
+
         return super.visitMethodDeclaration(ctx);
-    }
-
-    private void buildProcedureCalls(String body) {
-        currentMethodCall.addProcedures(parseProcedureCalls(body));
-    }
-
-    protected List<String> parseProcedureCalls(String body) {
-        ArrayList<String> res = new ArrayList<>();
-        String s = "(?:\\{.?(call|select|SELECT|CALL)\\s+)([a-zA-Z_\\d]+\\.[a-zA-Z_\\d]+)\\(";
-        final Pattern p = Pattern.compile(s);
-        final Matcher m = p.matcher(body);
-        while (m.find()) {
-            String pl = m.group(2);
-            res.add(pl);
-        }
-        return res;
-    }
-
-    private void buildTableOps(String body) {
-        List<String> tableOps = parseTables(body);
-        if (tableOps == null || tableOps.size() == 0) {
-            return;
-        }
-
-        String op = tableOps.get(0);
-        for (int i = 1; i < tableOps.size(); i++) {
-            String s = tableOps.get(i);
-            if (isTableOperator(s)) {
-                op = s;
-            } else {
-                currentMethodCall.addTableOp(s, op);
-            }
-        }
-    }
-
-    private boolean isTableOperator(String s) {
-        return "INSERT".equalsIgnoreCase(s)
-                || "SELECT".equalsIgnoreCase(s)
-                || "UPDATE".equalsIgnoreCase(s)
-                || "DELETE".equalsIgnoreCase(s);
-    }
-
-    private List<String> parseTables(String body) {
-        List<String> result = new ArrayList<>();
-        String[] ts = body.split("[\\s|\"|,]");
-        for (int i = 0; i < ts.length - 1; i++) {
-            String s = ts[i];
-            if (s.startsWith("t_") || s.startsWith("T_")) {
-                //select from, insert into,delete from,update
-                String op = parseTableOperate(ts, i);
-                if (op != null) {
-                    result.add(op);
-                }
-                result.add(s);
-            }
-        }
-        return result;
-    }
-
-    private String parseTableOperate(String[] ts, int index) {
-        String pre = ts[index - 1];
-        String op = null;
-        if ("update".equalsIgnoreCase(pre)) {
-            op = "UPDATE";
-        } else if ("into".equalsIgnoreCase(pre)) {
-            op = "INSERT";
-        } else if ("from".equalsIgnoreCase(pre)) {
-            String prePre = ts[index - 2];
-            if ("delete".equalsIgnoreCase(prePre)) {
-                op = "DELETE";
-            } else {
-                op = "SELECT";
-            }
-        } else if ("delete".equalsIgnoreCase(pre)) {
-            op = "DELETE";
-        }
-        return op;
     }
 
     @Override
@@ -175,12 +88,7 @@ public class JavaCallVisitor extends JavaParserBaseVisitor {
                 //System.out.println("Can not wrap:\t" + targetType);
             }
 
-        } else {
-            //class static block
-            //System.out.println("-----------------visitMethodCall: currentMethodCall is null ------------");
-            //System.out.println(ctx.parent.getText());
         }
-
         return super.visitMethodCall(ctx);
     }
 
@@ -218,10 +126,10 @@ public class JavaCallVisitor extends JavaParserBaseVisitor {
                 //System.out.println("Matched: " + targetVar + " , " +targetType);
             } catch (NullPointerException e) {
                 //not create object new method. but name include new word.
-                System.out.println(ctx.getParent().getText());
+                LOGGER.info(ctx.getParent().getText());
                 //System.out.println(currentClz + " . " + currentMethodCall.getMethodName());
                 //System.out.println(targetCtx.getText());
-                e.printStackTrace();
+                LOGGER.info(e.getMessage());
             }
         } else {
             String fieldType = fields.get(targetVar);

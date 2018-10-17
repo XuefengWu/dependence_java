@@ -22,7 +22,7 @@ public class ParseClassService implements Service {
     @Override
     public void update(Routing.Rules rules) {
         rules
-                .get("/{class}", this::parse);
+                .post("/{class}", this::parse);
     }
 
     /**

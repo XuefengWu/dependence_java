@@ -14,13 +14,16 @@
 # limitations under the License.
 #
 
-app:
-  greeting: "Hello"
-  root: "/workspace"
-  keywords:
-    - com
-  neo4j-server: "neo4j"
+FROM openjdk:8-jre-alpine
 
-server:
-  port: 8080
-  host: 0.0.0.0
+RUN mkdir /app
+COPY target/dependencies_java-1.0.jar /app
+COPY target/libs /app/libs
+
+EXPOSE 8080
+
+ENTRYPOINT ["java"]
+CMD ["-jar", "/app/dependencies_java-1.0.jar"]
+
+#docker build -t dependencies_java -f src/main/docker/Dockerfile .
+#docker run --rm -it -p 8080:8080 -v /Users/xfwu/Workspace/petclient:/workspace dependencies_java bash

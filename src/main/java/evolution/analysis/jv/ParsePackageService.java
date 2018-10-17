@@ -1,6 +1,7 @@
 package evolution.analysis.jv;
 
 import evolution.analysis.jv.calls.JavaCallApp;
+import evolution.analysis.jv.calls.plugins.JavaDaoStringParser;
 import evolution.analysis.jv.identifier.JavaClassQuery;
 import evolution.analysis.jv.identifier.JavaIdentifierApp;
 import evolution.store.Neo4JDriverFactory;
@@ -25,11 +26,12 @@ public class ParsePackageService implements Service {
      */
     private final Config CONFIG = Config.create().get("app");
     private final String rootDir = CONFIG.get("root").asString("~/workspace");
+    private String neo4jServer = CONFIG.get("neo4j-server").asString("localhost");
 
     @Override
     public void update(Routing.Rules rules) {
         rules
-                .get("/{package}", this::parse);
+                .post("/{package}", this::parse);
     }
 
     /**
@@ -58,12 +60,12 @@ public class ParsePackageService implements Service {
     }
 
     private void parse(String pkg) throws Exception {
-        Driver driver = Neo4JDriverFactory.create();
+        Driver driver = Neo4JDriverFactory.create(neo4jServer);
         String dir = String.format("%s/cbs/src/main/java/%s",rootDir,pkg.replaceAll("\\.","/"));
         new JavaIdentifierApp(driver).analysisDir(dir);
         JavaClassQuery classQuery = new JavaClassQuery(driver);
         List<String> clzs = classQuery.load();
-        new JavaCallApp(driver).analysisDir(dir,clzs);
+        new JavaCallApp(driver,new JavaDaoStringParser()).analysisDir(dir,clzs);
         LOGGER.info("finished and close driver.");
         driver.close();
     }

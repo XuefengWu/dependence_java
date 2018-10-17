@@ -23,13 +23,19 @@ public class JavaMethodCallStore {
         this.driver = driver;
     }
 
+    private boolean isIgnoreCallee(String callee) {
+        //return callee.startsWith("get") || callee.startsWith("set");
+        return true; //ignore all java callee
+    }
+
     private boolean isTargetClass(String clz) {
         boolean res = false;
-        for(String keyword: includeKeyWorks){
+        for (String keyword : includeKeyWorks) {
             res = res || clz.contains(keyword);
         }
         return res;
     }
+
     public void save(List<JMethodCall> methodCalls) {
         try (Session session = driver.session()) {
             session.writeTransaction(new TransactionWork<Integer>() {
@@ -39,40 +45,10 @@ public class JavaMethodCallStore {
                         String pkg = ident.getPkg();
                         String clz = ident.getClz();
                         String callerFullName = pkg + "." + clz + "." + ident.getMethodName();
-                        LOGGER.info("save: "+callerFullName);
-                        StatementResult sr = tx.run("MATCH (m:JMethod{fullname:$callerfullname})-[r]->() RETURN COUNT(r)",
-                                parameters("callerfullname", callerFullName));
-                        if (!sr.hasNext() || sr.single().values().get(0).asInt() == 0) {
-                            for (String calleeClz : ident.getMethodCalls().keySet()) {
-                                if (isTargetClass(calleeClz)) {
-                                    //System.out.println("try to save: " + calleeClz);
-                                    for (String callee : ident.getMethodCalls().get(calleeClz)) {
-                                        //System.out.println("\t" + callee);
-                                        tx.run("MATCH (caller:JMethod {fullname: $callerfullname})  " +
-                                                        "MATCH (callee:JMethod {fullname: $calleefullname})  " +
-                                                        "MERGE  (caller)-[:Call {date:$date}]->(callee)",
-                                                parameters("callerfullname", callerFullName, "date", getToday(),
-                                                        "calleefullname", calleeClz + "." + callee));
-                                    }
-                                }
-                            }
-                            for (Map.Entry s : ident.getTableOps().entrySet()) {
-                                String table = s.getKey().toString();
-                                String op = s.getValue().toString();
-                                tx.run("MATCH (caller:JMethod {fullname: $callerfullname})  " +
-                                                "MATCH (t:Table {name: $table})  " +
-                                                "MERGE  (caller)-[:__op__ {date:$date}]->(t)".replace("__op__", op),
-                                        parameters("callerfullname", callerFullName, "date", getToday(),
-                                                "table", table));
-                            }
-                            for(String pl: ident.getProcedures()) {
-                                tx.run("MATCH (caller:JMethod {fullname: $callerfullname})  " +
-                                                "MATCH (callee:PLProcedure {fullname: $calleefullname})  " +
-                                                "MERGE  (caller)-[:Call {date:$date}]->(callee)",
-                                        parameters("callerfullname", callerFullName, "date", getToday(),
-                                                "calleefullname", pl));
-                            }
-                        }
+                        saveCallJavaMethod(tx, ident, callerFullName);
+                        saveAccessTable(tx, ident, callerFullName);
+                        saveCallProcedure(tx, ident, callerFullName);
+
                     }
                     return methodCalls.size();
                 }
@@ -80,7 +56,51 @@ public class JavaMethodCallStore {
         }
     }
 
-    private String getToday() {
-        return new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+    private void saveCallProcedure(Transaction tx, JMethodCall ident, String callerFullName) {
+        for (String pl : ident.getProcedures()) {
+            tx.run("MATCH (caller:JMethod {fullname: $callerfullname})  " +
+                            "MATCH (callee:PLProcedure {fullname: $calleefullname})  " +
+                            "MERGE  (caller)-[:Call {date:$date}]->(callee)",
+                    parameters("callerfullname", callerFullName, "date", getToday(),
+                            "calleefullname", pl));
+        }
     }
+
+    private void saveAccessTable(Transaction tx, JMethodCall ident, String callerFullName) {
+        for (Map.Entry s : ident.getTableOps().entrySet()) {
+            String table = s.getKey().toString();
+            String op = s.getValue().toString();
+            LOGGER.info("save table: " + table);
+            tx.run("MATCH (caller:JMethod {fullname: $callerfullname})  " +
+                            "MERGE (t:Table {name: $table})  " +
+                            "MERGE  (caller)-[:__op__ {date:$date}]->(t)".replace("__op__", op),
+                    parameters("callerfullname", callerFullName, "date", getToday(),
+                            "table", table));
+        }
+    }
+
+    private void saveCallJavaMethod(Transaction tx, JMethodCall ident, String callerFullName) {
+        for (String calleeClz : ident.getMethodCalls().keySet()) {
+            if (isTargetClass(calleeClz)) {
+                //System.out.println("try to save: " + calleeClz);
+                for (String callee : ident.getMethodCalls().get(calleeClz)) {
+                    if (!isIgnoreCallee(callee)) {
+                        //System.out.println("\t" + callee);
+                        tx.run("MATCH (caller:JMethod {fullname: $callerfullname})  " +
+                                        "MATCH (callee:JMethod {fullname: $calleefullname})  " +
+                                        "MERGE  (caller)-[:Call {date:$date}]->(callee)",
+                                parameters("callerfullname", callerFullName, "date", getToday(),
+                                        "calleefullname", calleeClz + "." + callee));
+                    }
+                }
+            }
+        }
+    }
+
+    private String today = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+
+    private String getToday() {
+        return today;
+    }
+
 }

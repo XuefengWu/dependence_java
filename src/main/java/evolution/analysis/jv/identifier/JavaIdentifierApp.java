@@ -3,7 +3,6 @@ package evolution.analysis.jv.identifier;
 
 import evolution.analysis.jv.JavaParserBaseVisitor;
 import evolution.analysis.jv.ProcessFiles;
-import evolution.store.Neo4JDriverFactory;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.neo4j.driver.v1.Driver;
 
