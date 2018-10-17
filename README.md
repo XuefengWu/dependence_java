@@ -1,13 +1,19 @@
-# ANTLR4 Tutorial - Java Project
-
-If you need help to setup everything you can read the [Java Setup section of the ANTLR Mega Tutorial](https://tomassetti.me/antlr-mega-tutorial/#java-setup)
-
-The commands you need to know:
+# Analysis Java Dependence
+ 
+#Setup analysis java server 
 ```
-// to generate the program use maven
-mvn package
-// to launch the application
-java -cp target/markup-example-1.0-jar-with-dependencies.jar me.tomassetti.examples.MarkupParser.App
-// to run the tests
-mvn test
+docker build -t analysis_java -f src/main/docker/Dockerfile .
+docker-compose up
+```
+
+#Useage 
+the server is running
+```
+GET http://localhost:8080/greet/world
+```
+
+analysis API
+```
+POST http://localhost:8080/analysis/class/{class}
+POST http://localhost:8080/analysis/package/{package}
 ```

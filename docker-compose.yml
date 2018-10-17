@@ -1,0 +1,30 @@
+version: '3'
+
+networks:
+  neo4j:
+    driver: bridge
+
+services:
+
+  analysis_java:
+    image: analysis_java     
+    depends_on:
+      - neo4j
+    volumes:          ## adds app folder to the container
+      - /Users/xfwu/Workspace/petclinet/:/workspace
+    networks:            ## connects neo4j to app container
+      - neo4j
+    ports:            ## publish ports
+      - "8080:8080"
+    working_dir: /app         ## uses work dir /app    
+    
+  neo4j:
+    image: neo4j:3.4          ## we use neo4j v3
+    ports:                    ## publish ports to have Web UI
+      - "7474:7474"
+      - "7687:7687"
+    networks:
+      - neo4j
+    volumes:                  ## adds folder with login/password
+      - $HOME/neo4j/data:/data
+    #--env=NEO4J_dbms_memory_pagecache_size=2G --env=NEO4J_dbms_memory_heap_max__size=2G  
