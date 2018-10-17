@@ -13,11 +13,19 @@ public class JavaDaoStringParser implements JavaDaoParser {
 
     @Override
     public void parse(JMethodCall currentMethod, String body) {
-        Map<String,String> tableOpsMap = buildTableOps(body);
+        if (!isContainTable(body)) {
+            return;
+        }
+        Map<String, String> tableOpsMap = buildTableOps(body);
         currentMethod.addTableOps(tableOpsMap);
         LOGGER.info(currentMethod.getMethodName() + " use table size: " + currentMethod.getTableOps().size());
         List<String> procedures = parseProcedureCalls(body);
         currentMethod.addProcedures(procedures);
+
+    }
+
+    private boolean isContainTable(String body) {
+        return body.contains("T_") || body.contains("CALL");
     }
 
 
@@ -34,8 +42,8 @@ public class JavaDaoStringParser implements JavaDaoParser {
     }
 
 
-    private Map<String,String>  buildTableOps(String body) {
-        Map<String,String> tableOpsMap = new HashMap<>();
+    private Map<String, String> buildTableOps(String body) {
+        Map<String, String> tableOpsMap = new HashMap<>();
         List<String> tableOps = parseTables(body);
         LOGGER.info("buildTableOps: " + tableOps.toString());
         if (tableOps == null || tableOps.size() == 0) {
@@ -43,7 +51,7 @@ public class JavaDaoStringParser implements JavaDaoParser {
         }
 
         String op = tableOps.get(0);
-        if(!isTableOperator(op)) {
+        if (!isTableOperator(op)) {
             LOGGER.warning(body);
         }
         LOGGER.info("tableOps.size: " + tableOps.size());
@@ -60,10 +68,10 @@ public class JavaDaoStringParser implements JavaDaoParser {
     }
 
 
-    public String cleanTableName(String table){
+    public String cleanTableName(String table) {
         String pattern = "([A-Z_]+).*";
         Pattern r = Pattern.compile(pattern);
-        Matcher matcher =  r.matcher(table);
+        Matcher matcher = r.matcher(table);
         matcher.find();
         return matcher.group(1);
     }
@@ -83,7 +91,7 @@ public class JavaDaoStringParser implements JavaDaoParser {
 
         for (int i = 0; i < ss.length - 1; i++) {
             String s = ss[i].toString();
-            if (s.startsWith("t_") || s.startsWith("T_") || s.startsWith("vdm_") || s.startsWith("VDM_") ) {
+            if (s.startsWith("t_") || s.startsWith("T_") || s.startsWith("vdm_") || s.startsWith("VDM_")) {
                 //select from, insert into,delete from,update
                 String op = parseTableOperate(ss, i);
                 if (op != null) {
@@ -97,7 +105,7 @@ public class JavaDaoStringParser implements JavaDaoParser {
 
     private String parseTableOperate(Object[] ts, int index) {
         String pre = ts[index - 1].toString();
-        while(!("from".equalsIgnoreCase(pre.trim()) || isTableOperator(pre))&&index>0) {
+        while (!("from".equalsIgnoreCase(pre.trim()) || isTableOperator(pre)) && index > 0) {
             index = index - 1;
             pre = ts[index - 1].toString();
         }

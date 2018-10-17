@@ -12,6 +12,8 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.*;
 import java.io.*;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -30,6 +32,10 @@ public class MyBatisParser implements JavaDaoParser {
         String clz = currentMethod.getClz();
         String clzFullName = pkg + "." + clz;
         String file = String.format("%s/src/main/resources/%s.xml",rootDir,clzFullName.replaceAll("\\.","/"));
+        if(!(clzFullName.toLowerCase().contains("mapper") || clzFullName.toLowerCase().contains("dao"))
+                || !Files.exists(Paths.get(file))){
+            return;
+        }
         String sql = "";
         try {
             sql = findMethodSql(file,currentMethod.getMethodName());
