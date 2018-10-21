@@ -20,6 +20,7 @@ app:
   keywords:
     - com
   neo4j-server: "neo4j"
+  dao-parse-type: "MyBatisParser"
 
 server:
   port: 8080

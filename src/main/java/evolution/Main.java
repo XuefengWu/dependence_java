@@ -2,7 +2,9 @@ package evolution;
 
 
 import evolution.analysis.jv.ParseClassService;
-import evolution.analysis.jv.ParsePackageService;
+import evolution.configuration.ConfigReader;
+import evolution.factory.ServiceFactory;
+import evolution.factory.daoparser.DaoParserProvider;
 import io.helidon.config.Config;
 import io.helidon.webserver.*;
 import io.helidon.webserver.json.JsonSupport;
@@ -32,11 +34,14 @@ public final class Main {
      * @return the new instance
      */
     private static Routing createRouting() {
+        DaoParserProvider reader = new ConfigReader();
+        ServiceFactory factory = new ServiceFactory(reader);
+
         return Routing.builder()
                 .register(JsonSupport.get())
                 .register("/greet", new GreetService())
-                .register("/analysis/class", new ParseClassService())
-                .register("/analysis/package", new ParsePackageService())
+                .register("/analysis/class", factory.createParseClassService())
+                .register("/analysis/package", factory.createParsePackageService())
                 .build();
     }
 
