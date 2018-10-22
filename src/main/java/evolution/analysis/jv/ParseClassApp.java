@@ -1,8 +1,7 @@
 package evolution.analysis.jv;
 
 import evolution.analysis.jv.calls.JavaCallApp;
-import evolution.analysis.jv.calls.plugins.JavaDaoStringParser;
-import evolution.analysis.jv.calls.plugins.MyBatisParser;
+import evolution.analysis.jv.calls.JavaDaoParser;
 import evolution.analysis.jv.identifier.JavaClassQuery;
 import evolution.analysis.jv.identifier.JavaIdentifierApp;
 import evolution.store.Neo4JDriverFactory;
@@ -24,7 +23,7 @@ public class ParseClassApp {
     public ParseClassApp(String neo4jServer){
         this.neo4jServer = neo4jServer;
     }
-    public void parse(String rootDir, String clz) throws IOException {
+    public void parse(String rootDir, String clz, JavaDaoParser daoParser) throws IOException {
         Driver driver = Neo4JDriverFactory.create(neo4jServer);
         JavaClassQuery classQuery = new JavaClassQuery(driver);
         List<String> clzs = classQuery.load();
@@ -36,7 +35,7 @@ public class ParseClassApp {
 
         Path path = Paths.get(file);
         new JavaIdentifierApp(driver).parse(path);
-        new JavaCallApp(driver,new MyBatisParser(rootDir)).parse(path,clzs);
+        new JavaCallApp(driver, daoParser).parse(path,clzs);
         driver.close();
         LOGGER.info("finished and close driver.");
     }

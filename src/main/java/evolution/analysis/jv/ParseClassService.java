@@ -1,5 +1,7 @@
 package evolution.analysis.jv;
 
+import evolution.analysis.jv.calls.plugins.MyBatisParser;
+import evolution.factory.daoparser.JavaDaoParserFactory;
 import io.helidon.config.Config;
 import io.helidon.webserver.Routing;
 import io.helidon.webserver.ServerRequest;
@@ -18,6 +20,12 @@ public class ParseClassService implements Service {
     private final Config CONFIG = Config.create().get("app");
     private final String rootDir = CONFIG.get("root").asString("~/workspace");
     private final ParseClassApp clzParser = new ParseClassApp();
+    private final JavaDaoParserFactory javaDaoParserFactory;
+
+    public ParseClassService(JavaDaoParserFactory javaDaoParserFactory) {
+
+        this.javaDaoParserFactory = javaDaoParserFactory;
+    }
 
     @Override
     public void update(Routing.Rules rules) {
@@ -35,7 +43,7 @@ public class ParseClassService implements Service {
         String clz = request.path().param("class");
 
         try {
-            clzParser.parse(rootDir,clz);
+            clzParser.parse(rootDir,clz, javaDaoParserFactory.createDaoParser());
             JsonObject returnObject = Json.createObjectBuilder()
                     .add("message", clz)
                     .build();
